@@ -180,8 +180,7 @@ ul.plain b{color:var(--ink);}
   <div class="mast-in">
     <div class="eyebrow">独立研究项目 · 方法演示</div>
     <h1>VOC 分析原型</h1>
-    <p class="mast-sub">基于 1994 条 App Store 公开评论（今日头条主版 + 极速版）构建的客户之声分析系统。
-      这份原型真正想展示的不是看板，而是<b>分析过程中三次被数据证伪的经历</b>——以及产品该如何把自己的局限暴露在界面上。</p>
+    <p class="mast-sub">基于 1994 条 App Store 公开评论（今日头条主版 + 极速版）构建的客户之声分析系统。</p>
   </div>
   <div class="tabs" role="tablist" id="tabs"></div>
 </div>
@@ -337,6 +336,41 @@ function viewOverview() {
     ${stat("待评估建议", sugg, "需求池，不计入负面率", "pos")}
   </div>`;
 
+  /* 结论：取严重度最高的几条，完整列表在「简报与处置」。
+     刻意与右侧的「不能回答什么」并排——结论和它的适用边界必须同时进入视野。 */
+  const sevOrder = { high: 0, medium: 1, info: 2 };
+  const seen = new Set();
+  const picked = [...D.brief.findings].filter((f) => f.kind !== "quality")
+    .sort((a, b) => sevOrder[a.severity] - sevOrder[b.severity])
+    // 同一个问题簇会同时产出「增长」和「规模」两条结论，总览只留严重度更高的那条，
+    // 否则前四条会被一个问题占掉一半。完整列表仍在「简报与处置」。
+    .filter((f) => { const key = f.href ?? f.title; return !seen.has(key) && !!seen.add(key); })
+    .slice(0, 4);
+  const conclusions = card("本期结论", `全部 ${D.brief.findings.length} 条，此处列 ${picked.length} 条`,
+    `<ol style="list-style:none;padding:0;margin:0;display:grid;gap:10px">${picked.map((f) => {
+      const [sl, st] = SEV[f.severity];
+      return `<li style="background:var(--sunken);border-radius:6px;padding:10px 13px">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px">
+          <span class="chip ${st}">${sl}</span><span class="chip">${KIND[f.kind] ?? f.kind}</span>
+          <b style="font-size:12.5px">${esc(f.title)}</b></div>
+        <p style="font-size:12px;color:var(--muted);margin:5px 0 0;line-height:1.7">${esc(f.detail)}</p>
+        <div class="num" style="font-size:10.5px;color:var(--faint);margin-top:7px">判据：${esc(f.evidence)}</div></li>`;
+    }).join("")}</ol>`,
+    `每条结论都由规则生成并指回统计判据，不用 LLM —— 可以被逐条反驳。
+     完整列表与责任团队分配见「简报与处置」。`);
+
+  const ev = D.evaluation, objN = (lv) => D.kpi.objDist.find((o) => o.object_level === lv)?.n ?? 0;
+  const limits = card("这套数据不能回答什么", "结论的适用边界", `<ul class="plain">
+    <li>· <b>不是满意度</b>　商店评论由情绪强烈的用户自选书写。负面率只能用于问题之间的排序与同口径的时间对比，
+      不能读成「${pct(D.kpi.recent.nsr, 0)} 的用户不满意」。</li>
+    <li>· <b>不覆盖安卓</b>　数据仅来自 iOS，而头条的下沉用户主要在安卓。</li>
+    <li>· <b>标注无人工校验</b>　全部标签由关键词规则生成，对照星级准确率 ${ev.independent.accuracy.toFixed(3)}、
+      κ ${ev.independent.kappa.toFixed(3)}；另有 ${pct(ev.fallbackRate, 0)} 的反馈无情感词命中，情感由星级先验推得。</li>
+    <li>· <b>频道不可横向比</b>　频道靠文本关键词推断，覆盖率低且有偏。</li>
+    <li>· <b>对象层级未被检验</b>　商店评论几乎全部指向产品本身
+      （product ${objN("product")} / content ${objN("content")} / event ${objN("event")}）。</li></ul>`,
+    `这些不是待办事项，是读上面每个数字时必须带着的约束。完整口径见「方法论」。`);
+
   const falsify = card("这份分析被数据证伪了三次", "本项目最值得看的部分", `
     <p class="lede">下面每一条，都是先得出了一个看起来很漂亮的结论，再被数据推翻的。
       三条如果不处理，会分别产出「负面率翻倍」「某问题环比 +19000%」「版本劣化 16 倍」这类完全虚假的信号。</p>
@@ -400,7 +434,9 @@ function viewOverview() {
       ${bar(t.n, D.meta.total, t.feedback_type === "问题" ? "var(--neg)" : t.feedback_type === "表扬" ? "var(--pos)" : t.feedback_type === "建议" ? "var(--warn)" : "var(--line-firm)")}</li>`).join("")}</ul>`,
     `「希望加个横屏锁屏键」是需求不是故障。建议与咨询共 ${(D.kpi.typeDist.find((t) => t.feedback_type === "建议")?.n ?? 0) + (D.kpi.typeDist.find((t) => t.feedback_type === "咨询")?.n ?? 0)} 条，已排除在负面率之外。`);
 
-  return kpis + falsify
+  return kpis
+    + `<div class="grid g3">${conclusions}${limits}</div>`
+    + falsify
     + `<div class="grid g3">${topCard}<div>${risingCard}${typeCard}</div></div>`
     + `<div class="grid g2">${obj}${card("各一级分类负面反馈量", "产品口径，已排除 other", catBars(D.catAgg))}</div>`;
 }
