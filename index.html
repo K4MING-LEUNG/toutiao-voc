@@ -62,9 +62,9 @@ a{color:var(--accent);}
 .mast-in h1{font-size:26px;margin:6px 0 6px;}
 .mast-sub{font-size:12.5px;color:var(--muted);max-width:68ch;margin:0 0 14px;}
 
-.disclaimer{background:var(--warn-wash);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
-.disclaimer-in{max-width:1180px;margin:0 auto;padding:9px 24px;font-size:11px;line-height:1.65;color:var(--muted);}
-.disclaimer b{color:var(--warn);}
+.notice{background:var(--sunken);border:1px solid var(--line);border-radius:6px;
+  padding:11px 14px;margin:0 0 18px;font-size:11px;line-height:1.7;color:var(--muted);}
+.notice b{color:var(--ink);font-weight:600;}
 
 .tabs{max-width:1180px;margin:0 auto;padding:0 24px;display:flex;gap:2px;overflow-x:auto;}
 .tab{flex:0 0 auto;border:0;background:none;font-family:var(--sans);font-size:12.5px;color:var(--muted);
@@ -184,14 +184,6 @@ ul.plain b{color:var(--ink);}
       这份原型真正想展示的不是看板，而是<b>分析过程中三次被数据证伪的经历</b>——以及产品该如何把自己的局限暴露在界面上。</p>
   </div>
   <div class="tabs" role="tablist" id="tabs"></div>
-</div>
-<div class="disclaimer">
-  <div class="disclaimer-in">
-    <b>非官方 · 无关联</b>　本站与字节跳动、今日头条无任何关联，非其官方产品，数据与结论均未经其认可。
-    原始评论来自 Apple App Store 公开页面、版权归各自作者所有，此处作分析引用，不展示作者身份信息。
-    页面上的情感、分类、风险等级等<b>全部标签由关键词规则自动生成</b>（对照星级准确率约 0.80，无任何人工校验），
-    仅供方法演示，<b>不可作为对该产品的事实性评价</b>。
-  </div>
 </div>
 <main id="app"></main>
 
@@ -829,8 +821,13 @@ function viewMethod() {
      全部为真实公开评论，无合成数据。<b>但所有标注均由关键词规则自动生成，无人工校验</b>——
      原始语料可以直接引用，标注结果只能当线索。`);
 
+  const notice = `<div class="notice">
+    <b>非官方 · 无关联</b>　本站与字节跳动、今日头条无任何关联，数据与结论未经其认可。
+    原始评论来自 Apple App Store 公开页面，版权归各自作者，仅作分析引用且不展示作者身份。
+    全部标签由关键词规则自动生成、无人工校验，<b>不可作为对该产品的事实性评价</b>。</div>`;
+
   return `<p class="lede">每个指标的口径、每个数字的来源、以及这套数据不能回答什么。
-    下面的评估结果由 ${D.voices.length} 条真实数据算出，不是写死的。</p>` + src + bias + ev + covCard + defs + cant;
+    下面的评估结果由 ${D.voices.length} 条真实数据算出，不是写死的。</p>` + notice + src + bias + ev + covCard + defs + cant;
 }
 
 /* ─────────── 路由与事件 ─────────── */
